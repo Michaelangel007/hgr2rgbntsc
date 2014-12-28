@@ -4,12 +4,16 @@
 */
 
 // Includes _______________________________________________________________
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <stdint.h> // uint8_t
-    #include <string.h> // memset
-#if 0
+    #include "StdAfx.h"
+
+//    uint8_t  csbits[ 1024 ];
+//    void     make_csbits() {};
+    uint8_t *MemGetMainPtr( uint16_t address );
+    uint8_t *MemGetAuxPtr ( uint16_t address );
+
+#if 1
     #include "wsvideo.cpp"
+    #include "cs.cpp"
 #else
     #define FRAMEBUFFER_W 600
     #define FRAMEBUFFER_H 420
@@ -19,7 +23,8 @@
 
     enum
     {
-        _8K = 8 * 1024
+         _8K =  8 * 1024,
+        _64K = 64 * 1024
     };
 
     enum TargaImageType_e
@@ -49,15 +54,28 @@
         uint8_t aPixelData[1]        ; // 12 ?? variable length RGB data
     };
 
+    enum VideoFlag_e
+    {
+        VF_80COL  = 0x00000001,
+        VF_DHIRES = 0x00000002,
+        VF_HIRES  = 0x00000004,
+        VF_MASK2  = 0x00000008,
+        VF_MIXED  = 0x00000010,
+        VF_PAGE2  = 0x00000020,
+        VF_TEXT   = 0x00000040
+    };
+
 // Globals (Private ) _____________________________________________________
-    uint8_t gaMemMain[ _8K ];
-    uint8_t gaMemAux [ _8K ];
+    uint8_t  gaMemMain[ _64K ];
+    uint8_t  gaMemAux [ _64K ];
     uint32_t gaFrameBuffer[ FRAMEBUFFER_H ][ FRAMEBUFFER_W ];
 
+    int      g_bVideoMode;
 
 // Prototypes _____________________________________________________________
     void convert( const char *pSrcFileName );
     void init_mem();
+    void init_videomode();
     void hgr2rgb();
     void rgb2tga( TargaHeader_t *pTargaHeader );
 
@@ -80,7 +98,8 @@ printf( "Dst: '%s'\n", pDstFileName );
         FILE *pSrcFile = fopen( pSrcFileName, "rb" );
         FILE *pDstFile = fopen( pDstFileName, "w+b" );
 
-        fread( gaMemMain, _8K, 1, pSrcFile );
+        size_t nPageHGR = 0x2000;
+        fread( gaMemMain + nPageHGR, _8K, 1, pSrcFile );
 
         TargaHeader_t tga;
         hgr2rgb();
@@ -94,18 +113,66 @@ printf( "Dst: '%s'\n", pDstFileName );
     }
 
     //========================================================================
+    void hgr2rgb()
+    {
+        g_pFuncVideoUpdate( VIDEO_SCANNER_6502_CYCLES );
+    }
+
+    //========================================================================
     void init_mem()
     {
         memset( gaMemMain, 0, sizeof( gaMemMain ) );
         memset( gaMemMain, 0, sizeof( gaMemAux  ) );
 
-        //memset( gaFrameBuffer, 0, sizeof( gaFrameBuffer ) );
+        memset( gaFrameBuffer, 0, sizeof( gaFrameBuffer ) );
     }
 
-    //========================================================================
-    void hgr2rgb()
+    void init_videomode()
     {
-        //g_pFuncVideoUpdate( VIDEO_SCANNER_6502_CYCLES );
+        // From Video.cpp VideoSetMode()
+        wsTextPage = 1;
+        wsHiresPage = 1;
+        if (g_bVideoMode & VF_PAGE2) {
+            if (0 == (g_bVideoMode & VF_MASK2)) {
+                wsTextPage  = 2;
+                wsHiresPage = 2;
+            }
+        }
+
+        if (g_bVideoMode & VF_TEXT) {
+            if (g_bVideoMode & VF_80COL)
+                g_pFuncVideoUpdate = wsUpdateVideoText80;
+            else
+                g_pFuncVideoUpdate = wsUpdateVideoText40;
+        }
+        else if (g_bVideoMode & VF_HIRES) {
+            if (g_bVideoMode & VF_DHIRES)
+                if (g_bVideoMode & VF_80COL)
+                    g_pFuncVideoUpdate = wsUpdateVideoDblHires;
+                else
+                    g_pFuncVideoUpdate = wsUpdateVideoHires0;
+            else
+              g_pFuncVideoUpdate = wsUpdateVideoHires;
+        }
+        else {
+            if (g_bVideoMode & VF_DHIRES)
+                if (g_bVideoMode & VF_80COL)
+                    g_pFuncVideoUpdate = wsUpdateVideoDblLores;
+                else
+                    g_pFuncVideoUpdate = wsUpdateVideo7MLores;
+            else
+              g_pFuncVideoUpdate = wsUpdateVideoLores;
+        }
+    }
+
+    uint8_t *MemGetMainPtr( uint16_t address )
+    {
+        return &gaMemMain[ address ];
+    }
+
+    uint8_t *MemGetAuxPtr ( uint16_t address )
+    {
+        return &gaMemAux[ address ];
     }
 
     //========================================================================
@@ -123,7 +190,17 @@ printf( "Dst: '%s'\n", pDstFileName );
     int main( const int nArg, const char *aArg[] )
     {
         init_mem();
-        //init_wsvideo();
+        wsVideoInitModel( 1 ); // Apple //e
+        wsVideoInit();
+        wsVideoStyle( 1, 1 );
+
+        g_bVideoMode = VF_HIRES;
+        init_videomode();
+
+        // From: Video.cpp wsVideoCreateDIBSection()
+        uint8_t *g_pFramebufferbits = (uint8_t*) &gaFrameBuffer[0][0];
+        for (int y = 0; y < 384; y++)
+            wsLines[y] = g_pFramebufferbits + 4 * FRAMEBUFFER_W * ((FRAMEBUFFER_H - 1) - y - 18) + 80;
 
         if( nArg > 1 )
         {
