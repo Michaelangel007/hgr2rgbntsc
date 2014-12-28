@@ -20,10 +20,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "StdAfx.h"
 #include "cs.h"
 #include "wsvideo.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h> // uint8_t
+//#include <math.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <stdint.h> // uint8_t
 
 // Defines
 	#define PI 3.1415926535898f
@@ -269,7 +269,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 	// prototypes from Memory.h
 	//unsigned char * MemGetAuxPtr (unsigned short);
 	//unsigned char * MemGetMainPtr (unsigned short);
-	void init_chroma_phase_table();
+	static void init_chroma_phase_table();
 	void updateColorPhase();
 	void updateVideoHorzEOL();
 
@@ -623,6 +623,7 @@ static void ntscColorSinglePixel (int compositeSignal)
 
 static void ntscColorDoublePixel (int compositeSignal)
 {
+printf( "ntscColorDoublePixel() %d\n", compositeSignal );
 	DOUBLEPIXEL(compositeSignal, NTSCColor[g_nColorPhaseNTSC]);
 	updateColorPhase();
 }
@@ -710,6 +711,7 @@ unsigned char wsVideoByte (unsigned long cycle)
 }
 
 #define VIDEO_DRAW_BITS() do { \
+printf( "VIDEO_DRAW_BITS: bt: %04X\n", bt );\
 	if (g_nColorBurstPixels < 2) \
 	{ \
 		/* #1 of 7 */ \
@@ -1005,7 +1007,7 @@ void wsUpdateVideoDblHires (long ticks)
 void wsUpdateVideoHires (long ticks)
 {
 	unsigned ad, bt;
-	
+printf( "wsUpdateVideoHires( %d )\n", (int)ticks );	
 	if (wsVideoMixed && g_nVideoClockVert >= VIDEO_SCANNER_Y_MIXED)
 	{
 		g_pFuncVideoText(ticks);
