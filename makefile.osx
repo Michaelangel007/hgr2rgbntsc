@@ -1,0 +1,12 @@
+TARGET=bin/hgr2rgb.x
+all: $(TARGET)
+
+C_FLAGS=-Wall -Wextra -Isrc
+
+
+clean:
+	rm $(TARGET)
+
+bin/hgr2rgb.x: src/main.cpp src/wsvideo.cpp src/wsvideo.h
+	g++ -g $(C_FLAGS) $< -o $@
+
