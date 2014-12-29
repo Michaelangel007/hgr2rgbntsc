@@ -3,12 +3,12 @@
 ifeq ($(OS),Windows_NT)
    echo "Use MSVC Solution/Project"
 else
-   UNAME = $(shell uname -s)
+    UNAME = $(shell uname -s)
 
-   ifeq ($(UNAME),Linux)
-       TARGET=bin/hgr2rgb.elf
-   endif
-   ifeq ($(UNAME),Darwin)
+    ifeq ($(UNAME),Linux)
+        TARGET=bin/hgr2rgb.elf
+    endif
+    ifeq ($(UNAME),Darwin)
         TARGET=bin/hgr2rgb.osx
    endif
 endif
