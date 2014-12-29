@@ -6,6 +6,10 @@ Apple HGR to RGB NTSC
 Usage:
 ======
 
+* Win32: `bin/hgr2rgb.exe`
+* OSX  : `bin/hgr2rgb.osx`
+* Linux: `bin/hgr2rgb.elf`
+
 `bin/hgr2rgb.exe [-bmp | -tga] filename`
 
     -tga   Output to .tga (default)
@@ -20,8 +24,8 @@ Compiling
 =========
 
 * Win32: MSVC2010.sln
-
-* OSX: `make -f makefile.osx`
+* OSX:   `make`
+* Linux: `make`
 
 Screenshots
 ===========
