@@ -8,8 +8,8 @@ Usage:
 
 `bin/hgr2rgb.exe [-bmp | -tga] filename`
 
-  -tga   Output to .tga (default)
-  -bmp   Output to .bmp
+    -tga   Output to .tga (default)
+    -bmp   Output to .bmp
 
 Example:
 ========
