@@ -1,6 +1,10 @@
 /*
     Copyleft {C} 2014 Michael Pohoreski
     License: GPL2
+    Description: command line utility to convert an 8K Apple .hgr to .tga (or .bmp)
+        https://github.com/Michaelangel007/hgr2rgbntsc
+    Notes: Extracted from AppleWin NTSC
+        https://github.com/AppleWin/AppleWin
 
 MSVC2010 Debug:
     Configuration Properties, Debugging
@@ -10,19 +14,18 @@ MSVC2010 Debug:
 
 // Includes _______________________________________________________________
     #include "StdAfx.h"
-
-//    uint8_t  csbits[ 1024 ];
-//    void     make_csbits() {};
-    uint8_t *MemGetMainPtr( uint16_t address );
-    uint8_t *MemGetAuxPtr ( uint16_t address );
-
-#if 1
     #include "wsvideo.cpp"
     #include "cs.cpp"
-#else
-    #define FRAMEBUFFER_W 600
-    #define FRAMEBUFFER_H 420
-#endif
+
+// Defines ________________________________________________________________
+
+    #if defined(_MSC_VER)
+        #define PACKED
+        #pragma pack(push,1)
+    #endif
+    #if defined(__GNUC__)
+        #define PACKED __attribute__ ((__packed__))
+    #endif
 
 // Types __________________________________________________________________
 
@@ -34,13 +37,9 @@ MSVC2010 Debug:
 
     enum TargaImageType_e
     {
-        TARGA_RGB = 2,
-        TARGA_HEADER_SIZE = 0x12
+        TARGA_TYPE_RGB = 2
     };
 
-#ifdef _MSC_VER
-	#pragma pack(push,1)
-#endif // _MSC_VER
     struct TargaHeader_t
     {                                // Addr Bytes
         uint8_t nIdBytes             ; // 00 01 size of ID field that follows 18 byte header (0 usually)
@@ -59,10 +58,52 @@ MSVC2010 Debug:
         uint8_t iDescriptor          ; // 11 01 image descriptor bits (vh flip bits)
 
         // pixel data...
-        uint8_t aPixelData[1]        ; // 12 ?? variable length RGB data
+        //uint8_t aPixelData[1]        ; // 12 ?? variable length RGB data
+    } PACKED;
+
+    enum BitmapImageType_e
+    {
+        BMP_TYPE_RGB = 0 // WinGDI.h BI_RGB
     };
+
+    struct bgra_t
+    {
+        uint8_t b;
+        uint8_t g;
+        uint8_t r;
+        uint8_t a; // reserved on Win32
+    };
+
+    struct WinBmpHeader_t
+    {
+        // BITMAPFILEHEADER     // Addr Size
+        uint8_t nCookie[2]      ; // 0x00 0x02 BM
+        int32_t nSizeFile       ; // 0x02 0x04 0 = ignore
+        int16_t nReserved1      ; // 0x06 0x02
+        int16_t nReserved2      ; // 0x08 0x02
+        int32_t nOffsetData     ; // 0x0A 0x04
+        //                      ==      0x0D (14)
+
+        // BITMAPINFOHEADER
+        int32_t nStructSize     ; // 0x0E 0x04 biSize
+        int32_t nWidthPixels    ; // 0x12 0x04 biWidth
+        int32_t nHeightPixels   ; // 0x16 0x04 biHeight
+        int16_t nPlanes         ; // 0x1A 0x02 biPlanes
+        int16_t nBitsPerPixel   ; // 0x1C 0x02 biBitCount
+        int32_t nCompression    ; // 0x1E 0x04 biCompression 0 = BI_RGB
+        int32_t nSizeImage      ; // 0x22 0x04 0 = ignore
+        int32_t nXPelsPerMeter  ; // 0x26 0x04
+        int32_t nYPelsPerMeter  ; // 0x2A 0x04
+        int32_t nPaletteColors  ; // 0x2E 0x04
+        int32_t nImportantColors; // 0x32 0x04
+        //                      ==      0x28 (40)
+
+        // RGBQUAD
+        // pixelmap
+    } PACKED;
+
 #ifdef _MSC_VER
-	#pragma pack(pop)
+    #pragma pack(pop)
 #endif // _MSC_VER
 
     enum VideoFlag_e
@@ -83,12 +124,20 @@ MSVC2010 Debug:
 
     int      g_bVideoMode;
 
+    char     BAD_TARGA__HEADER_SIZE_Compiler_Packing_not_19[ sizeof( TargaHeader_t  ) ==  18       ];
+    char     BAD_BITMAP_HEADER_SIZE_Compiler_Packing_not_54[ sizeof( WinBmpHeader_t ) == (14 + 40) ];
+    bool     g_bOutputBMP = false;
+    bool     g_bScanLines50Percent = false; // leave every other line in the output blank
+
 // Prototypes _____________________________________________________________
     void convert( const char *pSrcFileName );
     void init_mem();
     void init_videomode();
     void hgr2rgb();
-    void rgb2tga( TargaHeader_t *pTargaHeader );
+    void rgb2bmp( FILE *pDstFile );
+    void rgb2tga( FILE *pDstFile );
+    void rgb32to24write( FILE *pDstFile );
+    int usage();
 
 
 // Implementation _________________________________________________________
@@ -101,7 +150,7 @@ MSVC2010 Debug:
         size_t nLen = strlen( pSrcFileName );
 
         strcpy( aDstFileName       , pSrcFileName );
-        strcat( pDstFileName + nLen, ".tga" );
+        strcat( pDstFileName + nLen, g_bOutputBMP ? ".bmp" : ".tga" );
 
 printf( "Src: '%s'\n", pSrcFileName );
 printf( "Dst: '%s'\n", pDstFileName ); 
@@ -114,12 +163,13 @@ printf( "Dst: '%s'\n", pDstFileName );
             size_t nPageHGR = 0x2000;
             fread( gaMemMain + nPageHGR, _8K, 1, pSrcFile );
 
-            TargaHeader_t tga;
             hgr2rgb();
-            rgb2tga( &tga );
 
-            fwrite( (void*)&tga          , TARGA_HEADER_SIZE      , 1, pDstFile );
-            fwrite( (void*)&gaFrameBuffer, sizeof( gaFrameBuffer ), 1, pDstFile );
+            if( g_bOutputBMP )
+                rgb2bmp( pDstFile );
+            else
+                rgb2tga( pDstFile );
+
         } 
         else
             printf( "ERROR: Couldn't open source file: '%s'\n", pSrcFileName );
@@ -192,14 +242,92 @@ printf( "Dst: '%s'\n", pDstFileName );
     }
 
     //========================================================================
-    void rgb2tga( TargaHeader_t *pTargaHeader )
+    void rgb2bmp( FILE *pDstFile )
     {
+        WinBmpHeader_t bmp, *pBMP = &bmp;
+        
+        pBMP->nCookie[ 0 ] = 'B'; // 0x42
+        pBMP->nCookie[ 1 ] = 'M'; // 0x4d
+        pBMP->nSizeFile  = 0;
+        pBMP->nReserved1 = 0;
+        pBMP->nReserved2 = 0;
+        pBMP->nOffsetData = sizeof(WinBmpHeader_t);
+        pBMP->nStructSize = 0x28; // sizeof( WinBmpHeader_t );
+        pBMP->nWidthPixels = FRAMEBUFFER_W;
+        pBMP->nHeightPixels = FRAMEBUFFER_H;
+        pBMP->nPlanes        = 1;
+        pBMP->nBitsPerPixel  = 24;
+        pBMP->nCompression   = BMP_TYPE_RGB; // BI_RGB;
+        pBMP->nSizeImage     = 0;
+        pBMP->nXPelsPerMeter = 0;
+        pBMP->nYPelsPerMeter = 0;
+        pBMP->nPaletteColors = 0;
+        pBMP->nImportantColors = 0;
+        fwrite( (void*)&bmp, sizeof( WinBmpHeader_t ), 1, pDstFile );
+        rgb32to24write( pDstFile );
+    }
+
+    //========================================================================
+    void rgb2tga( FILE *pDstFile )
+    {
+        TargaHeader_t tga, *pTargaHeader = &tga;
         memset( (void*)pTargaHeader, 0, sizeof( TargaHeader_t ) );
 
-        pTargaHeader->iImageType    = TARGA_RGB;
+        pTargaHeader->iImageType    = TARGA_TYPE_RGB;
         pTargaHeader->nWidthPixels  = FRAMEBUFFER_W;
         pTargaHeader->nHeightPixels = FRAMEBUFFER_H;
         pTargaHeader->nBitsPerPixel = 24;
+        fwrite( (void*)&tga          , sizeof( TargaHeader_t ), 1, pDstFile );
+      //fwrite( (void*)&gaFrameBuffer, sizeof( gaFrameBuffer ), 1, pDstFile ); // See 32-bit note below
+        rgb32to24write( pDstFile );
+    }
+    
+    void rgb32to24write( FILE *pDstFile )
+    {
+        const int SRC_LINE_BYTES = FRAMEBUFFER_W * 4; // 32-bit
+        const int DST_LINE_BYTES = FRAMEBUFFER_W * 3; // 24-bit
+        uint8_t   destLine[ DST_LINE_BYTES ];
+
+        /// Note: Framebuffer is 32-bit but we need to write 24-bit
+        uint8_t *pSrc = (uint8_t*) &gaFrameBuffer[0][0];
+        uint8_t *pDst;
+
+        if( !g_bScanLines50Percent )
+            pSrc += SRC_LINE_BYTES; // start on odd scanline
+
+        for( int y = 0; y < FRAMEBUFFER_H; y++ )
+        {
+            pDst = destLine;
+
+            for( int x = 0; x < FRAMEBUFFER_W; x++ )
+            {
+                *pDst++ = *pSrc++; // b
+                *pDst++ = *pSrc++; // g
+                *pDst++ = *pSrc++; // r
+                /*     */  pSrc++; // a skip
+            }
+            fwrite( (void*)&destLine, DST_LINE_BYTES, 1, pDstFile );
+
+            if( !g_bScanLines50Percent )
+            {
+                fwrite( (void*)&destLine, DST_LINE_BYTES, 1, pDstFile );
+                y++;
+                pSrc += SRC_LINE_BYTES; // start on odd scanline
+            }
+        }
+    }
+
+    //========================================================================
+    int usage()
+    {
+        printf(
+"hgr2rgb, Version 1 by Michael Pohoreski\n"
+"usage: [-bmp | -tga] filename\n"
+"Convert filename to .tga (default)\n"
+"Source code and examples can be found at:\n"
+"    https://github.com/Michaelangel007/hgr2rgbntsc\n"
+        );
+        return 0;
     }
 
     //========================================================================
@@ -214,15 +342,32 @@ printf( "Dst: '%s'\n", pDstFileName );
 
         wsVideoInitModel( 1 ); // Apple //e
         wsVideoInit();
-        wsVideoStyle( 1, 1 );
+        wsVideoStyle( 1, 2 ); // 1=single pixel, 2=double pixel
 
         g_bVideoMode = VF_HIRES;
         init_videomode();
 
         if( nArg > 1 )
         {
-            convert( aArg[1] );
+            int iArg = 1;
+            if( strcmp( aArg[1], "-bmp" ) == 0 )
+            {
+                g_bOutputBMP = true;
+                iArg = 2;
+            }
+            else
+            if( strcmp( aArg[1], "-tga" ) == 0 )
+            {
+                g_bOutputBMP = false;
+                iArg = 2;
+            }
+            if( strcmp( aArg[1], "-?" ) == 0 )
+                return usage();
+
+            convert( aArg[ iArg ] );
         }
+        else
+            usage();
 
         return 0;
     }

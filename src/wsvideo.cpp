@@ -712,7 +712,7 @@ unsigned char wsVideoByte (unsigned long cycle)
 }
 
 #define VIDEO_DRAW_BITS() do { \
-printf( "VIDEO_DRAW_BITS: bt: %04X\n", bt );\
+/* printf( "VIDEO_DRAW_BITS: bt: %04X\n", bt ); */ \
 	if (g_nColorBurstPixels < 2) \
 	{ \
 		/* #1 of 7 */ \
@@ -1008,7 +1008,7 @@ void wsUpdateVideoDblHires (long ticks)
 void wsUpdateVideoHires (long ticks)
 {
 	unsigned ad, bt;
-printf( "wsUpdateVideoHires( %d )\n", (int)ticks );	
+
 	if (wsVideoMixed && g_nVideoClockVert >= VIDEO_SCANNER_Y_MIXED)
 	{
 		g_pFuncVideoText(ticks);
@@ -1030,7 +1030,8 @@ printf( "wsUpdateVideoHires( %d )\n", (int)ticks );
 				unsigned char * main = MemGetMainPtr(ad);
 
 				bt = g_aPixelDoubleMaskHGR[main[0] & 0x7F]; // Optimization: hgrbits second 128 entries are mirror of first 128
-				if (main[0] & 0x80) bt = (bt << 1) | g_nLastColumnPixelNTSC;
+				if (main[0] & 0x80)
+                    bt = (bt << 1) | g_nLastColumnPixelNTSC;
 				VIDEO_DRAW_BITS();
 			}
 		}
