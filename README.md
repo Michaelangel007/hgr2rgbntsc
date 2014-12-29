@@ -23,3 +23,18 @@ Compiling
 
 * OSX: `make -f makefile.osx`
 
+Screenshots
+===========
+
+![alt text](https://raw.githubusercontent.com/Michaelangel007/hgr2rgbntsc/master/bmp/archon.hgr2.bmp "Archon")
+
+![alt text](https://raw.githubusercontent.com/Michaelangel007/hgr2rgbntsc/master/bmp/8x8.hgr2.bmp "8x8")
+
+![alt text](https://raw.githubusercontent.com/Michaelangel007/hgr2rgbntsc/master/bmp/bytes.hgr.bmp "256 bytes")
+
+![alt text](https://raw.githubusercontent.com/Michaelangel007/hgr2rgbntsc/master/bmp/drol.hgr2.bmp "Drol")
+
+![alt text](https://raw.githubusercontent.com/Michaelangel007/hgr2rgbntsc/master/bmp/swiss.hgr2.bmp "Swiss Knife")
+
+![alt text](https://raw.githubusercontent.com/Michaelangel007/hgr2rgbntsc/master/bmp/ua2.hgr2.bmp "Understanding Apple //e")
+
