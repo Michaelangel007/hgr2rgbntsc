@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hgr2tga", "hgr2tga.vcxproj", "{3D05589D-6761-4225-9719-817919B75BEE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hgr2rgb", "hgr2rgb.vcxproj", "{3D05589D-6761-4225-9719-817919B75BEE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
