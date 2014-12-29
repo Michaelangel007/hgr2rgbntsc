@@ -1,12 +1,28 @@
-TARGET=bin/hgr2rgb.x
+# --- Platform ---
+# http://stackoverflow.com/questions/714100/os-detecting-makefile
+ifeq ($(OS),Windows_NT)
+   echo "Use MSVC Solution/Project"
+else
+   UNAME = $(shell uname -s)
+
+   ifeq ($(UNAME),Linux)
+       TARGET=bin/hgr2rgb.elf
+   endif
+   ifeq ($(UNAME),Darwin)
+        TARGET=bin/hgr2rgb.osx
+   endif
+endif
+
+# --- Common ---
+
 all: $(TARGET)
 
-C_FLAGS=-Wall -Wextra -Isrc
-
-
 clean:
-	rm $(TARGET)
+	@if [ -a $(TARGET) ] ; then rm $(TARGET); fi;
 
-bin/hgr2rgb.x: src/main.cpp src/wsvideo.cpp src/wsvideo.h
-	g++ -g $(C_FLAGS) $< -o $@
+C_FLAGS=-Wall -Wextra -Isrc
+DEP=src/main.cpp src/wsvideo.cpp src/wsvideo.h src/cs.cpp src/cs.h src/StdAfx.h
+
+$(TARGET): $(DEP)
+	g++ $(C_FLAGS) $< -o $@
 
