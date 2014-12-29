@@ -1,6 +1,11 @@
 /*
     Copyleft {C} 2014 Michael Pohoreski
     License: GPL2
+
+MSVC2010 Debug:
+    Configuration Properties, Debugging
+        Command Arguments: hgr/archon.hgr2
+        Working Directory: $(ProjectDir)
 */
 
 // Includes _______________________________________________________________
@@ -33,6 +38,9 @@
         TARGA_HEADER_SIZE = 0x12
     };
 
+#ifdef _MSC_VER
+	#pragma pack(push,1)
+#endif // _MSC_VER
     struct TargaHeader_t
     {                                // Addr Bytes
         uint8_t nIdBytes             ; // 00 01 size of ID field that follows 18 byte header (0 usually)
@@ -53,6 +61,9 @@
         // pixel data...
         uint8_t aPixelData[1]        ; // 12 ?? variable length RGB data
     };
+#ifdef _MSC_VER
+	#pragma pack(pop)
+#endif // _MSC_VER
 
     enum VideoFlag_e
     {
@@ -98,15 +109,20 @@ printf( "Dst: '%s'\n", pDstFileName );
         FILE *pSrcFile = fopen( pSrcFileName, "rb" );
         FILE *pDstFile = fopen( pDstFileName, "w+b" );
 
-        size_t nPageHGR = 0x2000;
-        fread( gaMemMain + nPageHGR, _8K, 1, pSrcFile );
+        if( pSrcFile )
+        {
+            size_t nPageHGR = 0x2000;
+            fread( gaMemMain + nPageHGR, _8K, 1, pSrcFile );
 
-        TargaHeader_t tga;
-        hgr2rgb();
-        rgb2tga( &tga );
+            TargaHeader_t tga;
+            hgr2rgb();
+            rgb2tga( &tga );
 
-        fwrite( (void*)&tga          , TARGA_HEADER_SIZE      , 1, pDstFile );
-        fwrite( (void*)&gaFrameBuffer, sizeof( gaFrameBuffer ), 1, pDstFile );
+            fwrite( (void*)&tga          , TARGA_HEADER_SIZE      , 1, pDstFile );
+            fwrite( (void*)&gaFrameBuffer, sizeof( gaFrameBuffer ), 1, pDstFile );
+        } 
+        else
+            printf( "ERROR: Couldn't open source file: '%s'\n", pSrcFileName );
 
         fclose( pDstFile );
         fclose( pSrcFile );
@@ -190,17 +206,18 @@ printf( "Dst: '%s'\n", pDstFileName );
     int main( const int nArg, const char *aArg[] )
     {
         init_mem();
+
+        // From: Video.cpp wsVideoCreateDIBSection()
+        uint8_t *g_pFramebufferbits = (uint8_t*) &gaFrameBuffer[0][0];
+        for (int y = 0; y < 384; y++)
+            wsLines[y] = g_pFramebufferbits + 4 * FRAMEBUFFER_W * ((FRAMEBUFFER_H - 1) - y - 18) + 80;
+
         wsVideoInitModel( 1 ); // Apple //e
         wsVideoInit();
         wsVideoStyle( 1, 1 );
 
         g_bVideoMode = VF_HIRES;
         init_videomode();
-
-        // From: Video.cpp wsVideoCreateDIBSection()
-        uint8_t *g_pFramebufferbits = (uint8_t*) &gaFrameBuffer[0][0];
-        for (int y = 0; y < 384; y++)
-            wsLines[y] = g_pFramebufferbits + 4 * FRAMEBUFFER_W * ((FRAMEBUFFER_H - 1) - y - 18) + 80;
 
         if( nArg > 1 )
         {

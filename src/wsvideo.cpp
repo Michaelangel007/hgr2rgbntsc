@@ -77,7 +77,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 	static unsigned g_nVideoClockVert = 0; // 9-bit: VC VB VA V5 V4 V3 V2 V1 V0 = 0 .. 262
 	static unsigned g_nVideoClockHorz = 0; // 6-bit:          H5 H4 H3 H2 H1 H0 = 0 .. 64, 25 >= visible
 
-	unsigned g_aHorzClockMemAddress[VIDEO_SCANNER_MAX_HORZ];
+	uint16_t g_aHorzClockMemAddress[VIDEO_SCANNER_MAX_HORZ]; // MSVC2010
 	unsigned char * wsLines[384];
 
 	unsigned wsFlashidx = 0;
@@ -705,6 +705,7 @@ int wsVideoIsVbl ()
 
 unsigned char wsVideoByte (unsigned long cycle)
 {
+	(void)cycle; // MSVC2010
 	unsigned char * mem;
 	mem = MemGetMainPtr(g_aHorzClockMemAddress[ g_nVideoClockHorz ]);
 	return mem[0];
