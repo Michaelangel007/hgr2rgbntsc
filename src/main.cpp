@@ -4,7 +4,7 @@
     Description: command line utility to convert an 8K Apple .hgr to .tga (or .bmp)
         https://github.com/Michaelangel007/hgr2rgbntsc
     Notes: Extracted from AppleWin NTSC
-        https://github.com/AppleWin/AppleWin
+        https://github.com/AppleWin/AppleWin/tree/AppleWin-Sheldon/source
 
 MSVC2010 Debug:
     Configuration Properties, Debugging
@@ -124,7 +124,7 @@ MSVC2010 Debug:
 
     int      g_bVideoMode;
 
-    char     BAD_TARGA__HEADER_SIZE_Compiler_Packing_not_19[ sizeof( TargaHeader_t  ) ==  18       ];
+    char     BAD_TARGA__HEADER_SIZE_Compiler_Packing_not_18[ sizeof( TargaHeader_t  ) ==  18       ];
     char     BAD_BITMAP_HEADER_SIZE_Compiler_Packing_not_54[ sizeof( WinBmpHeader_t ) == (14 + 40) ];
     bool     g_bOutputBMP = false;
     bool     g_bScanLines50Percent = false; // leave every other line in the output blank
@@ -312,7 +312,7 @@ printf( "Dst: '%s'\n", pDstFileName );
             {
                 fwrite( (void*)&destLine, DST_LINE_BYTES, 1, pDstFile );
                 y++;
-                pSrc += SRC_LINE_BYTES; // start on odd scanline
+                pSrc += SRC_LINE_BYTES; // skip odd source scanlines
             }
         }
     }
