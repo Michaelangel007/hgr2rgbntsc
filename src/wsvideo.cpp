@@ -623,7 +623,6 @@ static void ntscColorSinglePixel (int compositeSignal)
 
 static void ntscColorDoublePixel (int compositeSignal)
 {
-printf( "ntscColorDoublePixel() %d\n", compositeSignal );
 	DOUBLEPIXEL(compositeSignal, NTSCColor[g_nColorPhaseNTSC]);
 	updateColorPhase();
 }
