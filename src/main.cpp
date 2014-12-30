@@ -134,12 +134,11 @@ MSVC2010 Debug:
 
     int         g_bVideoMode;
     VideoType_e g_eVideoType;
-    int         g_uHalfScanLines;
+    int         g_uHalfScanLines; // 1=For TV double each line
 
     char     BAD_TARGA__HEADER_SIZE_Compiler_Packing_not_18[ sizeof( TargaHeader_t  ) ==  18       ];
     char     BAD_BITMAP_HEADER_SIZE_Compiler_Packing_not_54[ sizeof( WinBmpHeader_t ) == (14 + 40) ];
     bool     g_bOutputBMP = false;
-    bool     g_bScanLines50Percent = false; // leave every other line in the output blank
 
 // Prototypes _____________________________________________________________
     void convert( const char *pSrcFileName );
