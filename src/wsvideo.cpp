@@ -324,10 +324,10 @@ static real signal_prefilter (real z)
 	static real yv[NUM_SIGPOLES + 1] = { 0,0,0 };
 
 	xv[0] = xv[1];
-	xv[1] = xv[2]; 
+	xv[1] = xv[2];
 	xv[2] = z / SIGGAIN;
 	yv[0] = yv[1];
-	yv[1] = yv[2]; 
+	yv[1] = yv[2];
 	yv[2] = xv[0] + xv[2] + (2.f * xv[1]) + (-0.2718798058f * yv[0]) + (0.7465656072f * yv[1]);
 
 	return yv[2];
@@ -342,7 +342,7 @@ static real luma0_filter (real z)
 	xv[1] = xv[2];
 	xv[2] = z / LUMGAIN;
 	yv[0] = yv[1];
-	yv[1] = yv[2]; 
+	yv[1] = yv[2];
 	yv[2] = xv[0] + xv[2] + (2.f * xv[1]) + (LUMCOEF1 * yv[0]) + (LUMCOEF2 * yv[1]);
 
 	return yv[2];
@@ -357,7 +357,7 @@ static real luma1_filter (real z)
 	xv[1] = xv[2];
 	xv[2] = z / LUMGAIN;
 	yv[0] = yv[1];
-	yv[1] = yv[2]; 
+	yv[1] = yv[2];
 	yv[2] = xv[0] + xv[2] + (2 * xv[1]) + (LUMCOEF1 * yv[0]) + (LUMCOEF2 * yv[1]);
 
 	return yv[2];
@@ -369,10 +369,10 @@ static real chroma_filter (real z)
 	static real yv[NUM_CHRPOLES + 1];
 
 	xv[0] = xv[1];
-	xv[1] = xv[2]; 
+	xv[1] = xv[2];
 	xv[2] = z / CHRGAIN;
 	yv[0] = yv[1];
-	yv[1] = yv[2]; 
+	yv[1] = yv[2];
 	yv[2] = xv[2] - xv[0] + (-0.7318893645f * yv[0]) + (1.2336442711f * yv[1]);
 
 	return yv[2];
@@ -457,13 +457,13 @@ static void init_chroma_phase_table (void)
 			/*
 				YI'V' to RGB
 
-				[r g b] = [y i v][ 1      1      1    ]    
-								 [0.956  -0.272 -1.105]
-								 [0.621  -0.647  1.702]
+				[r g b] = [y i v][ 1      1      1    ]
+				                 [0.956  -0.272 -1.105]
+				                 [0.621  -0.647  1.702]
 
-				[r]   [1   0.956  0.621][y]    
-				[g]	= [1  -0.272 -0.647][i]
-				[b]	  [1  -1.105  1.702][v]
+				[r]   [1   0.956  0.621][y]
+				[g] = [1  -0.272 -0.647][i]
+				[b]   [1  -1.105  1.702][v]
 			*/
 			#define I_TO_R  0.956f
 			#define I_TO_G -0.272f
@@ -511,7 +511,7 @@ void wsVideoInit ()
 	vbp0 = wsLines[0];
 
 #if HGR_TEST_PATTERN
-// Michael -- Init HGR to almsot all-possible-combinations
+// Michael -- Init HGR to almost all-possible-combinations
 // CALL-151
 // C050 C053 C057
 	unsigned char b = 0;
