@@ -106,6 +106,7 @@ MSVC2010 Debug:
     #pragma pack(pop)
 #endif // _MSC_VER
 
+    // Video.h
     enum VideoFlag_e
     {
         VF_80COL  = 0x00000001,
@@ -117,12 +118,23 @@ MSVC2010 Debug:
         VF_TEXT   = 0x00000040
     };
 
+    enum VideoType_e
+    {
+          VT_COLOR_TV
+        , VT_COLOR_MONITOR
+        , VT_MONO_TV
+        , VT_MONO_MONITOR
+        , NUM_VIDEO_MODES
+    };
+
 // Globals (Private ) _____________________________________________________
     uint8_t  gaMemMain[ _64K ];
     uint8_t  gaMemAux [ _64K ];
     uint32_t gaFrameBuffer[ FRAMEBUFFER_H ][ FRAMEBUFFER_W ];
 
-    int      g_bVideoMode;
+    int         g_bVideoMode;
+    VideoType_e g_eVideoType;
+    int         g_uHalfScanLines;
 
     char     BAD_TARGA__HEADER_SIZE_Compiler_Packing_not_18[ sizeof( TargaHeader_t  ) ==  18       ];
     char     BAD_BITMAP_HEADER_SIZE_Compiler_Packing_not_54[ sizeof( WinBmpHeader_t ) == (14 + 40) ];
@@ -292,7 +304,7 @@ printf( "Dst: '%s'\n", pDstFileName );
         uint8_t *pSrc = (uint8_t*) &gaFrameBuffer[0][0];
         uint8_t *pDst;
 
-        if( !g_bScanLines50Percent )
+        if( g_uHalfScanLines )
             pSrc += SRC_LINE_BYTES; // start on odd scanline
 
         for( int y = 0; y < FRAMEBUFFER_H; y++ )
@@ -308,7 +320,7 @@ printf( "Dst: '%s'\n", pDstFileName );
             }
             fwrite( (void*)&destLine, DST_LINE_BYTES, 1, pDstFile );
 
-            if( !g_bScanLines50Percent )
+            if( g_uHalfScanLines )
             {
                 fwrite( (void*)&destLine, DST_LINE_BYTES, 1, pDstFile );
                 y++;
@@ -321,10 +333,18 @@ printf( "Dst: '%s'\n", pDstFileName );
     int usage()
     {
         printf(
-"hgr2rgb, Version 1 by Michael Pohoreski\n"
-"usage: [-bmp | -tga] filename\n"
-"Convert filename to .tga (default)\n"
+"hgr2rgb, Version 2 by Michael Pohoreski\n"
+"Convert filename.hgr to filename.hgr.tga (default)\n"
+"\n"
+"usage: [-bmp | -tga] [-tv] [-half] filename.hgr\n"
+"\n"
+"    -tga   Output to .tga (default)\n"
+"    -bmp   Output to .bmp\n"
+"    -tv    Use Color TV rendering (default is Color Monitor)\n"
+"    -half  Line double (default is single line rendering)\n"
+"\n"
 "Source code and examples can be found at:\n"
+
 "    https://github.com/Michaelangel007/hgr2rgbntsc\n"
         );
         return 0;
@@ -340,9 +360,12 @@ printf( "Dst: '%s'\n", pDstFileName );
         for (int y = 0; y < 384; y++)
             wsLines[y] = g_pFramebufferbits + 4 * FRAMEBUFFER_W * ((FRAMEBUFFER_H - 1) - y - 18) + 80;
 
+        g_eVideoType     = VT_COLOR_MONITOR; // VT_COLOR_TV
+        g_uHalfScanLines = 0;
+
         wsVideoInitModel( 1 ); // Apple //e
         wsVideoInit();
-        wsVideoStyle( 1, 2 ); // 1=single pixel, 2=double pixel
+        wsVideoStyle( g_eVideoType, g_uHalfScanLines ); // 1=single scan line, 2=double scan line
 
         g_bVideoMode = VF_HIRES;
         init_videomode();
@@ -350,21 +373,32 @@ printf( "Dst: '%s'\n", pDstFileName );
         if( nArg > 1 )
         {
             int iArg = 1;
-            if( strcmp( aArg[1], "-bmp" ) == 0 )
+            for( int i = 1; i < nArg; i++ )
             {
-                g_bOutputBMP = true;
-                iArg = 2;
+                if( strcmp( aArg[i], "-bmp" ) == 0 )
+                    g_bOutputBMP = true;
+                else
+                if( strcmp( aArg[i], "-tga" ) == 0 )
+                    g_bOutputBMP = false;
+                else
+                if( strcmp( aArg[i], "-tv" ) == 0 )
+                {
+                    g_eVideoType = VT_COLOR_TV;
+                    wsVideoStyle( g_eVideoType, g_uHalfScanLines );
+                }
+                else
+                if( strcmp( aArg[i], "-half" ) == 0 )
+                {
+                    g_uHalfScanLines = 1;
+                    wsVideoStyle( g_eVideoType, g_uHalfScanLines );
+                }
+                else
+                if( strcmp( aArg[i], "-?" ) == 0 )
+                    return usage();
+                iArg = i;
             }
-            else
-            if( strcmp( aArg[1], "-tga" ) == 0 )
-            {
-                g_bOutputBMP = false;
-                iArg = 2;
-            }
-            if( strcmp( aArg[1], "-?" ) == 0 )
-                return usage();
-
-            convert( aArg[ iArg ] );
+            if (iArg < nArg)
+                convert( aArg[ iArg ] );
         }
         else
             usage();
